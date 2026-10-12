@@ -42,7 +42,7 @@ For a one-click first-time setup that creates the virtual environment and instal
 
 If macOS reports that Python or the Qt `cocoa` platform plugin crashed, run `Install and Launch Board Warp.command` once to recreate or repair the environment. Closing the app does not delete `.venv`; this is intentional so later launches do not reinstall the dependencies.
 
-The image area is scrollable for large photos. The tool attempts to detect the board corners automatically and shows the proposed quadrilateral with a translucent overlay. Click near any detected point to adjust it. If no reliable borders are found, it falls back to the existing four-click workflow; `Reset` switches an automatic selection to manual mode.
+The image area is scrollable for large photos. The tool attempts to detect the board corners automatically and shows the proposed quadrilateral with a translucent overlay. Click near any detected point to adjust it. If no reliable borders are found, it falls back to the existing four-click workflow; `Reset` switches an automatic selection to manual mode. Click `Save / Next` to accept the current selection and process the next image.
 
 You can also launch the script directly with:
 
@@ -52,4 +52,4 @@ You can also launch the script directly with:
 
 ## Output
 
-Warped images are written to the `output/` folder in this repo.
+Warped images are written to the `output/` folder in this repo, preserving each input file's name and relative subfolder.

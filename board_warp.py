@@ -24,6 +24,47 @@ def order_points(pts):
     rect[3] = pts[np.argmax(diff)]
     return rect
 
+
+def detect_corners(image):
+    """Return a likely board quadrilateral, or None when detection is uncertain."""
+    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    edges = cv2.Canny(blurred, 40, 140)
+    edges = cv2.dilate(edges, np.ones((3, 3), dtype=np.uint8), iterations=1)
+    contours, _ = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    height, width = gray.shape
+    image_area = float(width * height)
+    candidates = []
+
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if area < image_area * 0.08 or area > image_area * 0.95:
+            continue
+        perimeter = cv2.arcLength(contour, True)
+        polygon = cv2.approxPolyDP(contour, perimeter * 0.03, True)
+        if len(polygon) != 4 or not cv2.isContourConvex(polygon):
+            continue
+        points = polygon.reshape(4, 2).astype('float32')
+        rect = cv2.minAreaRect(points)
+        rect_area = cv2.contourArea(cv2.boxPoints(rect).astype('float32'))
+        if rect_area <= 0:
+            continue
+        rectangularity = area / rect_area
+        if rectangularity < 0.55:
+            continue
+        touches_edge = np.any(
+            (points[:, 0] <= 5) | (points[:, 0] >= width - 6) |
+            (points[:, 1] <= 5) | (points[:, 1] >= height - 6)
+        )
+        score = area * rectangularity * (0.25 if touches_edge else 1.0)
+        candidates.append((score, points))
+
+    if not candidates:
+        return None
+    _, points = max(candidates, key=lambda candidate: candidate[0])
+    return order_points(points)
+
+
 class Label(QtWidgets.QLabel):
     clicked = QtCore.pyqtSignal(int, int)
     def mousePressEvent(self, ev):
@@ -61,6 +102,7 @@ class Window(QtWidgets.QWidget):
         self.orig = None
         self.pix = None
         self.base_pix = None
+        self.auto_detected = False
         self.load_current()
 
     def load_current(self):
@@ -83,15 +125,38 @@ class Window(QtWidgets.QWidget):
         self.pix = self.base_pix.copy()
         self.img_label.setPixmap(self.pix)
         self.img_label.resize(self.pix.size())
+        detected = detect_corners(self.orig)
         self.clicks = []
-        self.info.setText(f'{self.path.relative_to(SRC)}\nClick 4 corners in order: top-left, top-right, bottom-right, bottom-left')
+        self.auto_detected = detected is not None
+        if detected is not None:
+            self.clicks = [tuple((point * self.scale).astype(int)) for point in detected]
+            self.info.setText(
+                f'{self.path.relative_to(SRC)}\n'
+                'Corners detected automatically. Click near a point to adjust it, or click Reset for manual selection.'
+            )
+            self.redraw_selection()
+        else:
+            self.info.setText(
+                f'{self.path.relative_to(SRC)}\n'
+                'Corners not detected. Click 4 corners in order: top-left, top-right, bottom-right, bottom-left'
+            )
 
     def add_click(self, x, y):
         if self.pix is None:
             return
+        if self.auto_detected:
+            distances = [np.hypot(x - point[0], y - point[1]) for point in self.clicks]
+            nearest = int(np.argmin(distances))
+            if distances[nearest] <= 35:
+                self.clicks[nearest] = (x, y)
+                self.redraw_selection()
+            return
         if len(self.clicks) == 4:
             return
         self.clicks.append((x, y))
+        self.redraw_selection()
+
+    def redraw_selection(self):
         self.pix = self.base_pix.copy()
         painter = QtGui.QPainter(self.pix)
         painter.setPen(QtGui.QPen(QtGui.QColor('red'), 8))
@@ -111,7 +176,16 @@ class Window(QtWidgets.QWidget):
         self.img_label.resize(self.pix.size())
 
     def reset(self):
-        self.load_current()
+        if self.auto_detected:
+            self.clicks = []
+            self.auto_detected = False
+            self.redraw_selection()
+            self.info.setText(
+                f'{self.path.relative_to(SRC)}\n'
+                'Manual mode. Click 4 corners in order: top-left, top-right, bottom-right, bottom-left'
+            )
+        else:
+            self.load_current()
 
     def save_next(self):
         if len(self.clicks) != 4:
@@ -137,9 +211,10 @@ class Window(QtWidgets.QWidget):
         self.idx += 1
         self.load_current()
 
-app = QtWidgets.QApplication(sys.argv)
-win = Window()
-screen = app.primaryScreen().availableGeometry()
-win.resize(min(1500, screen.width() - 80), min(1000, screen.height() - 120))
-win.show()
-sys.exit(app.exec_())
+if __name__ == '__main__':
+    app = QtWidgets.QApplication(sys.argv)
+    win = Window()
+    screen = app.primaryScreen().availableGeometry()
+    win.resize(min(1500, screen.width() - 80), min(1000, screen.height() - 120))
+    win.show()
+    sys.exit(app.exec_())

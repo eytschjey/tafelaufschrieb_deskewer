@@ -14,7 +14,7 @@ A small PyQt tool for manually perspective-warping classroom board photos into s
 
 ## Requirements
 
-- Python 3
+- Python 3.15 (the setup launcher prefers the python.org installation)
 - `opencv-python-headless`
 - `numpy`
 - `PyQt5`
@@ -22,7 +22,7 @@ A small PyQt tool for manually perspective-warping classroom board photos into s
 Install in a virtualenv:
 
 ```bash
-python3 -m venv .venv
+/Library/Frameworks/Python.framework/Versions/3.15/bin/python3.15 -m venv .venv
 source .venv/bin/activate
 pip install opencv-python-headless numpy PyQt5 'PyQt5-Qt5==5.15.18'
 ```
@@ -42,7 +42,7 @@ For a one-click first-time setup that creates the virtual environment and instal
 
 If macOS reports that Python or the Qt `cocoa` platform plugin crashed, run `Install and Launch Board Warp.command` once to recreate or repair the environment. Closing the app does not delete `.venv`; this is intentional so later launches do not reinstall the dependencies.
 
-The image area is scrollable for large photos. After the fourth corner is selected, the chosen board area is highlighted with a translucent overlay.
+The image area is scrollable for large photos. The tool attempts to detect the board corners automatically and shows the proposed quadrilateral with a translucent overlay. Click near any detected point to adjust it. If no reliable borders are found, it falls back to the existing four-click workflow; `Reset` switches an automatic selection to manual mode.
 
 You can also launch the script directly with:
 

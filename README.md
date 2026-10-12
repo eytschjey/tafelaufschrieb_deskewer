@@ -30,10 +30,18 @@ pip install opencv-python-headless numpy PyQt5
 ## Usage
 
 1. Put your source images into the `input/` folder in this repo.
-2. Run:
+2. Start the tool:
 
 ```bash
-python board_warp.py
+./"Board Warp.command"
+```
+
+On macOS, you can double-click `Board Warp.command` in Finder. The launcher uses the repository's virtual environment, so the environment does not need to be activated manually.
+
+If the virtual environment has not been set up yet, run the installation commands above first. You can also launch the script directly with:
+
+```bash
+.venv/bin/python board_warp.py
 ```
 
 ## Output

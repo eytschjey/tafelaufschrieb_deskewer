@@ -18,4 +18,5 @@ if ! "$PYTHON" -c 'import cv2, numpy, PyQt5; from PyQt5.QtCore import QLibraryIn
     "$PYTHON" -m pip install opencv-python-headless numpy PyQt5 'PyQt5-Qt5==5.15.18' || exit 1
 fi
 
+export QT_QPA_PLATFORM_PLUGIN_PATH="$("$PYTHON" -c 'from PyQt5.QtCore import QLibraryInfo; print(QLibraryInfo.location(QLibraryInfo.PluginsPath) + "/platforms")')"
 exec "$PYTHON" "$ROOT/board_warp.py"

@@ -35,6 +35,9 @@ class Window(QtWidgets.QWidget):
         self.setWindowTitle('Board warp')
         self.img_label = Label()
         self.img_label.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+        self.image_scroll = QtWidgets.QScrollArea()
+        self.image_scroll.setWidget(self.img_label)
+        self.image_scroll.setWidgetResizable(False)
         self.info = QtWidgets.QLabel()
         self.info.setWordWrap(True)
         self.reset_btn = QtWidgets.QPushButton('Reset')
@@ -46,7 +49,7 @@ class Window(QtWidgets.QWidget):
         row.addWidget(self.quit_btn)
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(self.info)
-        layout.addWidget(self.img_label)
+        layout.addWidget(self.image_scroll, 1)
         layout.addLayout(row)
         self.reset_btn.clicked.connect(self.reset)
         self.save_btn.clicked.connect(self.save_next)
@@ -57,6 +60,7 @@ class Window(QtWidgets.QWidget):
         self.scale = 1.0
         self.orig = None
         self.pix = None
+        self.base_pix = None
         self.load_current()
 
     def load_current(self):
@@ -75,25 +79,36 @@ class Window(QtWidgets.QWidget):
         self.scale = 1400 / max(h, w) if max(h, w) > 1400 else 1.0
         disp = cv2.resize(self.orig, (int(w*self.scale), int(h*self.scale))) if self.scale != 1.0 else self.orig.copy()
         qimg = QtGui.QImage(disp.data, disp.shape[1], disp.shape[0], disp.strides[0], QtGui.QImage.Format_RGB888)
-        self.pix = QtGui.QPixmap.fromImage(qimg.copy())
+        self.base_pix = QtGui.QPixmap.fromImage(qimg.copy())
+        self.pix = self.base_pix.copy()
         self.img_label.setPixmap(self.pix)
+        self.img_label.resize(self.pix.size())
         self.clicks = []
         self.info.setText(f'{self.path.relative_to(SRC)}\nClick 4 corners in order: top-left, top-right, bottom-right, bottom-left')
 
     def add_click(self, x, y):
         if self.pix is None:
             return
+        if len(self.clicks) == 4:
+            return
         self.clicks.append((x, y))
+        self.pix = self.base_pix.copy()
         painter = QtGui.QPainter(self.pix)
         painter.setPen(QtGui.QPen(QtGui.QColor('red'), 8))
-        painter.drawPoint(x, y)
+        for point in self.clicks:
+            painter.drawPoint(*point)
         if len(self.clicks) > 1:
             painter.setPen(QtGui.QPen(QtGui.QColor('lime'), 3))
-            p1 = QtCore.QPoint(*self.clicks[-2])
-            p2 = QtCore.QPoint(*self.clicks[-1])
-            painter.drawLine(p1, p2)
+            for first, second in zip(self.clicks, self.clicks[1:]):
+                painter.drawLine(QtCore.QPoint(*first), QtCore.QPoint(*second))
+        if len(self.clicks) == 4:
+            polygon = QtGui.QPolygon([QtCore.QPoint(*point) for point in self.clicks])
+            painter.setBrush(QtGui.QBrush(QtGui.QColor(0, 255, 0, 70)))
+            painter.setPen(QtGui.QPen(QtGui.QColor('lime'), 4))
+            painter.drawPolygon(polygon)
         painter.end()
         self.img_label.setPixmap(self.pix)
+        self.img_label.resize(self.pix.size())
 
     def reset(self):
         self.load_current()
@@ -124,6 +139,7 @@ class Window(QtWidgets.QWidget):
 
 app = QtWidgets.QApplication(sys.argv)
 win = Window()
-win.resize(1500, 1000)
+screen = app.primaryScreen().availableGeometry()
+win.resize(min(1500, screen.width() - 80), min(1000, screen.height() - 120))
 win.show()
 sys.exit(app.exec_())

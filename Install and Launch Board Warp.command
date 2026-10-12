@@ -14,8 +14,8 @@ if [ ! -x "$PYTHON" ]; then
     python3 -m venv "$VENV" || exit 1
 fi
 
-if ! "$PYTHON" -c 'import cv2, numpy, PyQt5' >/dev/null 2>&1; then
-    "$PYTHON" -m pip install opencv-python-headless numpy PyQt5 || exit 1
+if ! "$PYTHON" -c 'import cv2, numpy, PyQt5; from PyQt5.QtCore import QLibraryInfo; raise SystemExit(QLibraryInfo.version().toString() != "5.15.18")' >/dev/null 2>&1; then
+    "$PYTHON" -m pip install opencv-python-headless numpy PyQt5 'PyQt5-Qt5==5.15.18' || exit 1
 fi
 
 exec "$PYTHON" "$ROOT/board_warp.py"

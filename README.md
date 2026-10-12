@@ -24,7 +24,7 @@ Install in a virtualenv:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install opencv-python-headless numpy PyQt5
+pip install opencv-python-headless numpy PyQt5 'PyQt5-Qt5==5.15.18'
 ```
 
 ## Usage
@@ -38,7 +38,9 @@ pip install opencv-python-headless numpy PyQt5
 
 On macOS, you can double-click `Board Warp.command` in Finder. The launcher uses the repository's virtual environment, so the environment does not need to be activated manually.
 
-For a one-click first-time setup that creates the virtual environment and installs any missing dependencies, double-click `Install and Launch Board Warp.command` instead. It checks for Python 3, installs the dependencies if needed, and then starts the tool.
+For a one-click first-time setup that creates the virtual environment and installs or repairs dependencies, double-click `Install and Launch Board Warp.command` instead. It checks for Python 3, installs the dependencies if needed, and then starts the tool. The Qt version is pinned because newer builds currently fail to load the macOS `cocoa` platform plugin.
+
+The image area is scrollable for large photos. After the fourth corner is selected, the chosen board area is highlighted with a translucent overlay.
 
 You can also launch the script directly with:
 
